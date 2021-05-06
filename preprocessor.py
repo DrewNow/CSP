@@ -16,52 +16,46 @@ class Prepocessor:
 
     def __init__(self, data):
         self.data = data
+        self.tokenized_data = None
 
 
-
-
-
-
-
-
-
-
+    def process(self):
+        # atom2vec atoms in data and pad
+        self.tokenized_data = np.array(list(map(self.tokenize_and_pad, self.data)))
+        mask = self.create_padding_mask(self.tokenized_data)
 
 
     @staticmethod
-    def create_depettifor(pettifor):
-        """ Create Pettifor -> Atomic symbols dictionary """
-        return dict(map(reversed, pettifor.items()))
+    def tokenize_and_pad(phase, maxl = 8):
+        """ Represent phases of m elements as a matrix (m, n)
+        with n-dimensional atom2vec representation """
 
-    @staticmethod
-    def tokenize(phase):
-        """ Represent phases of elements as lists of Pettifor numbers """
-        return np.array([pettifor[element] for element in phase])
-
-    @staticmethod
-    def detokenize(phase):
-        """ Invert tokenization to Pettifor -> Atomic symbol """
-        return [depettifor[element] for element in phase]
-
-    @staticmethod
-    def pad(phase, maxl=8):
-        """ Add zeros at the end of phase vector to equalize lengths """
-        if len(phase) == maxl:
-            return phase
+        vector = np.array([atom2vec(element) for element in phase])
+        length = len(phase)
+        if length == maxl:
+            return vector
         else:
-            padded = np.zeros(maxl)
-            padded[:len(phase)] = phase
-            return padded
+            return np.concatenate((vector, np.zeros(maxl-length)), axis=0)
 
     @staticmethod
-    def create_padding_mask(seq):
+    def detokenize(phase):            
+        pass
+
+    @staticmethod
+    def create_padding_mask(phase):
         """ Create tensor with ones at the padded positions in data """
 
-        seq = tf.cast(tf.math.equal(seq, 0), tf.float32)
+        seq = tf.cast(tf.math.equal(phase, 0), tf.float32)
         # add extra dimensions to add the padding
         # to the attention logits.
-        return seq[:, tf.newaxis, tf.newaxis, :]  # (batch_size, 1, 1, seq_len)
+        return seq[:, tf.newaxis, tf.newaxis, :]  # (batch_size, 1, 1, phase_size)
 
+    @staticmethod
+    def create_look_ahead_mask(size):
+        """ Mask future tokens in a sequence """
+        mask = 1 - tf.linalg.band_part(tf.ones((size, size)), -1, 0)
+        return mask  # (seq_len, seq_len)
+ 
 
 class PositionalEncoder:
     """Compute positional angles between the elements
