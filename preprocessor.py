@@ -11,22 +11,22 @@ import matplotlib.pyplot as plt
 from pettifor import pettifor
 
 
-class Prepocessor:
+class Preprocessor:
     """ Prepare data for training in Transformer model """
 
     def __init__(self, data):
         self.data = data
-        self.tokenized_data = None
 
-
-    def process(self):
+    def call(self):
         # atom2vec atoms in data and pad
-        self.tokenized_data = np.array(list(map(self.tokenize_and_pad, self.data)))
-        mask = self.create_padding_mask(self.tokenized_data)
+        tokenized_data = np.array(list(map(self.tokenize_and_pad, self.data)))
+        padding_mask = self.create_padding_mask(tokenized_data)
+        positional_encoding = PositionalEncoder(tokenized_data)
 
+        return tokenized_data, padding_mask, positional_encoding
 
     @staticmethod
-    def tokenize_and_pad(phase, maxl = 8):
+    def tokenize_and_pad(phase, maxl=8):
         """ Represent phases of m elements as a matrix (m, n)
         with n-dimensional atom2vec representation """
 
@@ -56,22 +56,19 @@ class Prepocessor:
         mask = 1 - tf.linalg.band_part(tf.ones((size, size)), -1, 0)
         return mask  # (seq_len, seq_len)
  
-
 class PositionalEncoder:
     """Compute positional angles between the elements
      to encode their positions in a sequence (TSP)"""
 
-    def __init__(self, position, dim=len(pettifor)):
+    def __init__(self, position, dim=20):
         self.position = position
-        self.dim = dim  # dimensionality of a model, e.g. len(pettifor)
-        self.angles = self.encode()
-        self.angles = self.tfcast(self.angles)
+        self.dim = dim  # dimensionality of a model
 
     def get_angles(self, pos, i):
         angle = 1 / np.power(10000, (2 * (i//2)) / np.float(self.dim))
         return pos * angle
 
-    def encode(self):
+    def call(self):
         angles = self.get_angles(np.arange(self.position)[:, np.newaxis],
                                  np.arange(self.dim)[:, np.newaxis])
         
@@ -80,7 +77,7 @@ class PositionalEncoder:
         # apply cos to odd indices in the array; 2i+1
         angles[:, 1::2] = np.cos(angles[:, 1::2])
 
-        return angles[np.newaxis, ...]
+        return tf.cast(angles[np.newaxis, ...], dtype=tf.float32)
    
     @staticmethod
     def plot_positional_encoding(angles):
@@ -95,7 +92,3 @@ class PositionalEncoder:
         plt.ylabel('Position')
         plt.colorbar()
         plt.show
-
-    @staticmethod
-    def tfcast(encoding):
-        return tf.cast(encoding, dtype=tf.float32)
