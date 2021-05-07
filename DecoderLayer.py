@@ -1,5 +1,6 @@
 import tensorflow as tf
 from MHA import MultiHeadAttention
+from EncoderLayer import EL
 
 class DecoderLayer(tf.keras.layers.Layer):
     def __init__(self, d_model, num_heads, dff, rate=0.1):
@@ -8,7 +9,7 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.mha1 = MultiHeadAttention(d_model, num_heads)
         self.mha2 = MultiHeadAttention(d_model, num_heads)
       
-        self.ffn = point_wise_feed_forward_network(d_model, dff)
+        self.ffn = EL(d_model, num_heads, dff).point_wise_feed_forward_network(d_model, dff)
       
         self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)

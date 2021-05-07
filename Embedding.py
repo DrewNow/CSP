@@ -54,4 +54,4 @@ class Embedding:
     def call(self):
         df = self.remove_missing_elements()
         df['compositions_vectors'] = list(map(self.atom2vec, df['composition'])) 
-        return df, tf.convert_to_tensor(df['compositions_vectors'].values), self.d_model
+        return df, tf.convert_to_tensor(df['compositions_vectors'].values), self.d_model, self.maxl

@@ -7,8 +7,8 @@ class PositionalEncoder:
      to encode their positions in a sequence (TSP)"""
 
     def __init__(self, position, dim=20):
-        self.position = position
-        self.dim = dim  # dimensionality of a model
+        self.position = position  # max lenth of a sequence
+        self.dim = dim            # dimensionality of a model
 
     def get_angles(self, pos, i):
         angle = 1 / np.power(10000, (2 * (i//2)) / np.float(self.dim))
