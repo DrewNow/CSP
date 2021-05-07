@@ -7,6 +7,7 @@
      """
 
 import numpy as np
+import tensorflow as tf
 
 class Embedding:
 
@@ -31,6 +32,7 @@ class Embedding:
         self.missing_elements =  set(self.ELEMENTS).difference(set(self.found_elements))
         self.a2v = {element: vector for element, vector in zip(self.found_elements, self.vectors)}
         self.maxl = max(list(map(len, self.data['composition'])))
+        self.d_model = len(self.vectors[0])
 
     def is_missing(self, composition):
         return set(composition).isdisjoint(self.missing_elements)
@@ -42,15 +44,14 @@ class Embedding:
 
     def atom2vec(self, composition):
         length = len(composition)
-        d_model = len(self.vectors[0])
         array = np.asarray([self.a2v[e] for e in composition])
 
-        if length == maxl:
+        if length == self.maxl:
             return array
         else:
-            return np.vstack([array, np.zeros((length - self.maxl, d_model))])
+            return np.vstack([array, np.zeros((length - self.maxl, self.d_model))])
 
     def call(self):
         df = self.remove_missing_elements()
         df['compositions_vectors'] = list(map(self.atom2vec, df['composition'])) 
-        return df
+        return df, tf.convert_to_tensor(df['compositions_vectors'].values), self.d_model
