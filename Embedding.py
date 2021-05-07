@@ -37,10 +37,10 @@ class Embedding:
     def is_missing(self, composition):
         return set(composition).isdisjoint(self.missing_elements)
 
-    def remove_missing_elements(self, name='composition'):
-        self.data['is_missing'] = list(map(self.is_missing, self.data[name].values))
-        df = self.data[self.data['is_missing']]
-        return df.drop(columns=['is_missing'])
+    def remove_missing_elements(self, x, name='composition'):
+        x['is_missing'] = list(map(self.is_missing, x[name].values))
+        x = x[x['is_missing']]
+        return x.drop(columns=['is_missing'])
 
     def atom2vec(self, composition):
         length = len(composition)
@@ -51,7 +51,8 @@ class Embedding:
         else:
             return np.vstack([array, np.zeros((length - self.maxl, self.d_model))])
 
-    def call(self):
-        df = self.remove_missing_elements()
-        df['compositions_vectors'] = list(map(self.atom2vec, df['composition'])) 
-        return df, tf.convert_to_tensor(df['compositions_vectors'].values), self.d_model, self.maxl
+    def call(self, x):
+        """ input x is pandas dataframe with a 'compositions' column """
+        x = self.remove_missing_elements(x)
+        x = np.array(list(map(self.atom2vec, x['compositions'].values)))
+        return tf.convert_to_tensor(x)

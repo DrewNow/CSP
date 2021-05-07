@@ -18,10 +18,11 @@ class Decoder(tf.keras.layers.Layer):
       
         self.num_layers = num_layers
 
-        _, self.data, self.d_model, self.maximum_position_encoding = Embedding()(data) 
-        self.padding_mask, self.look_ahead_mask = PaddingMasks(self.data)()
+        self.embed = Embedding(data)
+        self.maxlength = self.embed.maxl
+        self.d_model = self.embed.d_model
         
-        self.pos_encoding = PositionalEncoder(self.maximum_position_encoding, self.d_model)
+        self.pos_encoding = PositionalEncoder(self.maxlength, self.d_model)
       
         self.dec_layers = [DecoderLayer(self.d_model, num_heads, dff, rate)
                            for _ in range(num_layers)]
@@ -31,10 +32,12 @@ class Decoder(tf.keras.layers.Layer):
    
         attention_weights = {}
      
-        # x.shape == (batch_size, target_seq_len, d_model)
+        x = self.embed(x) # (batch_size, target_seq_len, d_model)
+
+        padding_mask, look_ahead_mask = PaddingMasks(x)()
+
         x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
         x += self.pos_encoding[:, :self.maximum_position_encoding, :]
-     
         x = self.dropout(x, training=training)
      
         for i in range(self.num_layers):

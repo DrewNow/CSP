@@ -25,19 +25,22 @@ class Encoder(tf.keras.layers.Layer):
 
         self.num_layers = num_layers
        
-        _, self.data, d_model, __ = Embedding(data)()       
-        self.mask, _ = PaddingMasks(self.data)()
+        self.embed = Embedding(data)
        
-        self.enc_layers = [EncoderLayer(d_model, num_heads, dff, rate)
+        self.enc_layers = [EncoderLayer(self.embed.d_model, num_heads, dff, rate)
                            for _ in range(num_layers)]
        
         self.dropout = tf.keras.layers.Dropout(rate)
        
     def call(self, x, training):
+
+        x = self.embed(x)
+
+        padding_mask, _ = PaddingMasks(x)()
    
         x = self.dropout(x, training=training)
       
         for i in range(self.num_layers):
-            x = self.enc_layers[i](x, training, self.mask)
+            x = self.enc_layers[i](x, training, padding_mask)
       
         return x  # (batch_size, input_seq_len, d_model)
